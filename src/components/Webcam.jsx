@@ -9,7 +9,7 @@ function Webcamcomponent(props) {
   const [hasPhoto, setHasPhoto] = useState(false);
   const [imageLabels, setImageLabels] = useState([]);
   const [capturedImage, setCapturedImage] = useState(null);
-  const [cloudinaryUrl, setCloudinaryUrl] = useState("");
+  const [, setCloudinaryUrl] = useState("");
   const [isFrontCamera, setIsFrontCamera] = useState(true);
 
   const toggleCamera = (event) => {
