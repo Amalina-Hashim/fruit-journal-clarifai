@@ -4,19 +4,16 @@ import Note from "./Note";
 import Modal from "./Modal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCamera } from "@fortawesome/free-solid-svg-icons";
-import { createNote, getAllNotes, deleteNoteById } from "../utils/airtable";
+import { createNote, getAllNotes } from "../utils/airtable";
 
 
 function App() {
   const [notes, setNotes] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [resetModal, setResetModal] = useState(false); 
-  const [locationName, setLocationName] = useState("");
-  const [cloudinaryUrl, setCloudinaryUrl] = useState("");
+  const [, setLocationName] = useState("");
+  const [, setCloudinaryUrl] = useState("");
 
-  const updateCloudinaryUrl = (url) => {
-    setCloudinaryUrl(url);
-  };
 
   useEffect(() => {
     async function fetchNotes() {
