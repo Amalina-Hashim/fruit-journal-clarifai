@@ -6,45 +6,87 @@ export default async function handler(req, res) {
   const { imageUrl } = req.body;
   const pat = process.env.CLARIFAI_PAT;
 
+  if (!pat) {
+    console.error("Error: Personal Access Token (PAT) is not set.");
+    return res
+      .status(500)
+      .json({ error: "Server configuration error: PAT is missing." });
+  }
+
+  if (!imageUrl) {
+    console.error("Error: Image URL is missing in the request payload.");
+    return res
+      .status(400)
+      .json({ error: "Bad Request: Image URL is required." });
+  }
+
   try {
-    const clarifaiResponse = await fetch(
-      "https://api.clarifai.com/v2/models/aa7f35c01e0642fda5cf400f543e7c40/outputs",
+    // Step 1: Fetch the available model versions
+    const versionResponse = await fetch(
+      "https://api.clarifai.com/v2/models/general-image-recognition/versions",
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${pat}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const versionData = await versionResponse.json();
+    const latestVersionId = versionData?.model_versions?.[0]?.id;
+
+    if (!latestVersionId) {
+      return res
+        .status(400)
+        .json({ error: "Could not retrieve the latest model version ID." });
+    }
+
+    console.log("Using model version ID:", latestVersionId);
+
+    // Step 2: Analyze the image using the retrieved model version ID
+    const requestData = {
+      user_app_id: {
+        user_id: "clarifai",
+        app_id: "main",
+      },
+      inputs: [
+        {
+          data: {
+            image: {
+              url: imageUrl,
+              allow_duplicate_url: true,
+            },
+          },
+        },
+      ],
+    };
+
+    const analysisResponse = await fetch(
+      `https://api.clarifai.com/v2/models/general-image-recognition/versions/${latestVersionId}/outputs`,
       {
         method: "POST",
         headers: {
           Authorization: `Bearer ${pat}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          user_app_id: {
-            user_id: "clarifai",
-            app_id: "main",
-          },
-          inputs: [
-            {
-              data: {
-                image: {
-                  url: imageUrl,
-                  allow_duplicate_url: true,
-                },
-              },
-            },
-          ],
-        }),
+        body: JSON.stringify(requestData),
       }
     );
 
-    const data = await clarifaiResponse.json();
+    const analysisData = await analysisResponse.json();
 
-    if (!clarifaiResponse.ok) {
-      console.error("Clarifai API Error Response:", data);
-      return res.status(400).json(data);
+    if (!analysisResponse.ok) {
+      console.error("Clarifai API Error Response:", analysisData);
+      return res.status(400).json(analysisData);
     }
 
-    console.log("Clarifai API Response:", data);
-    res.status(200).json(data);
+    console.log("Clarifai API Response:", analysisData);
+    res.status(200).json(analysisData);
   } catch (error) {
     console.error("Error communicating with Clarifai API:", error);
-    res.status(500).json({ error: "Error communicating with Clarifai API" });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error: Failed to analyze image." });
   }
 }
