@@ -12,12 +12,14 @@ function Webcamcomponent(props) {
   const [, setCloudinaryUrl] = useState("");
   const [isFrontCamera, setIsFrontCamera] = useState(true);
 
+  // Toggle between front and rear camera
   const toggleCamera = (event) => {
     event.preventDefault();
     setIsFrontCamera((prev) => !prev);
     getVideo();
   };
 
+  // Access the camera video stream
   const getVideo = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -30,6 +32,7 @@ function Webcamcomponent(props) {
     }
   };
 
+  // Capture photo from the webcam
   const takePhoto = async (event) => {
     event.preventDefault();
     const imageSrc = webcamRef.current.getScreenshot();
@@ -53,28 +56,30 @@ function Webcamcomponent(props) {
     }
   };
 
+  // Analyze the uploaded image using the Vercel serverless function
   const analyzeImageWithClarifai = async (uploadedUrl) => {
     try {
       const clarifaiResponse = await sendClarifaiRequest(uploadedUrl);
       const predictions = clarifaiResponse.outputs[0]?.data?.concepts || [];
-  
+
+      // Filter predictions with confidence score >= 0.95
       const filteredPredictions = predictions.filter(
         (prediction) => prediction.value >= 0.95
       );
-  
+
+      // Format the predictions for display
       const formattedLabels = filteredPredictions.map((prediction) => ({
         classNames: [prediction.name],
       }));
-  
+
       setImageLabels(formattedLabels);
     } catch (error) {
       console.error("Error analyzing image with Clarifai:", error);
     }
   };
 
+  // Send a request to the Vercel serverless function
   const sendClarifaiRequest = async (uploadedUrl) => {
-    const clarifaiApiKey = "575c20ad088247adbc403c6a17b56eb2";
-    const clarifaiEndpoint = `https://api.clarifai.com/v2/users/clarifai/apps/main/models/general-image-recognition/outputs`;
     const requestData = {
       inputs: [
         {
@@ -86,19 +91,22 @@ function Webcamcomponent(props) {
         },
       ],
     };
+
     const requestOptions = {
       method: "POST",
       headers: {
-        Authorization: `Key ${clarifaiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestData),
     };
 
     try {
-      const response = await fetch(clarifaiEndpoint, requestOptions);
+      // Use the Vercel serverless function 
+      const response = await fetch("/api/clarifai", requestOptions);
       if (!response.ok) {
-        throw new Error("Error analyzing image with Clarifai API");
+        throw new Error(
+          "Error analyzing image with Clarifai API via serverless function"
+        );
       }
       return await response.json();
     } catch (error) {
@@ -106,6 +114,7 @@ function Webcamcomponent(props) {
     }
   };
 
+  // Handle click on labels to remove them
   const handleLabelClick = (className) => {
     props.onLabelSelect(className);
     setImageLabels((prevLabels) =>
@@ -113,24 +122,28 @@ function Webcamcomponent(props) {
     );
   };
 
+  // Delete the captured photo
   const deletePhoto = () => {
     setHasPhoto(false);
     setCapturedImage(null);
     setImageLabels([]);
   };
 
+  // Reset the camera state
   const resetCamera = () => {
     setHasPhoto(false);
     setCapturedImage(null);
     setImageLabels([]);
   };
 
+  // Reset the camera when the modal is closed
   useEffect(() => {
     if (props.visible === false) {
       resetCamera();
     }
   }, [props.visible]);
 
+  // Add an event listener for the photo button
   useEffect(() => {
     const photoButton = document.getElementById("photoButton");
     if (photoButton) {
@@ -151,7 +164,9 @@ function Webcamcomponent(props) {
           audio={false}
           ref={webcamRef}
           screenshotFormat="image/png"
-          videoConstraints={{ facingMode: isFrontCamera ? "user" : "environment" }}
+          videoConstraints={{
+            facingMode: isFrontCamera ? "user" : "environment",
+          }}
         />
         <button id="photoButton" className="snap" onClick={takePhoto}>
           Snap
@@ -180,7 +195,7 @@ function Webcamcomponent(props) {
                     <li
                       className="list"
                       key={`${labelIndex}-${classNameIndex}`}
-                      onClick={() => handleLabelClick(className)} 
+                      onClick={() => handleLabelClick(className)}
                     >
                       {className}
                     </li>
