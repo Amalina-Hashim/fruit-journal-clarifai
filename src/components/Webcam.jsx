@@ -9,17 +9,15 @@ function Webcamcomponent(props) {
   const [hasPhoto, setHasPhoto] = useState(false);
   const [imageLabels, setImageLabels] = useState([]);
   const [capturedImage, setCapturedImage] = useState(null);
-  const [, setCloudinaryUrl] = useState("");
+  const [cloudinaryUrl, setCloudinaryUrl] = useState("");
   const [isFrontCamera, setIsFrontCamera] = useState(true);
 
-  // Toggle between front and rear camera
   const toggleCamera = (event) => {
     event.preventDefault();
     setIsFrontCamera((prev) => !prev);
     getVideo();
   };
 
-  // Access the camera video stream
   const getVideo = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -32,7 +30,6 @@ function Webcamcomponent(props) {
     }
   };
 
-  // Capture photo from the webcam
   const takePhoto = async (event) => {
     event.preventDefault();
     const imageSrc = webcamRef.current.getScreenshot();
@@ -45,24 +42,29 @@ function Webcamcomponent(props) {
       const uploadedUrl = uploadResponse?.secure_url;
 
       if (uploadedUrl) {
-        console.log("Uploaded image URL:", uploadedUrl);
+        console.log("Cloudinary uploaded image URL:", uploadedUrl); // Log the uploaded URL
         setCloudinaryUrl(uploadedUrl);
         props.onCapture(imageSrc, uploadedUrl);
         props.onCloudinaryUrlUpdate(uploadedUrl);
 
-        // Analyze the image using Clarifai
+        // Analyze the image using Clarifai with the Cloudinary URL
         await analyzeImageWithClarifai(uploadedUrl);
       } else {
-        console.error("Failed to retrieve the uploaded image URL.");
+        console.error("Uploaded URL is undefined");
       }
     } catch (error) {
       console.error("Error uploading image to Cloudinary:", error);
     }
   };
 
-  // Analyze the uploaded image using the Vercel serverless function
+  // Analyze the uploaded image using the Clarifai API through the serverless function
   const analyzeImageWithClarifai = async (uploadedUrl) => {
     try {
+      if (!uploadedUrl) {
+        console.error("Clarifai analysis skipped: uploadedUrl is undefined");
+        return;
+      }
+
       const clarifaiResponse = await sendClarifaiRequest(uploadedUrl);
       const predictions = clarifaiResponse.outputs[0]?.data?.concepts || [];
 
@@ -82,7 +84,7 @@ function Webcamcomponent(props) {
     }
   };
 
-  // Send a request to the Vercel serverless function
+  // Send request to the Clarifai API via serverless function
   const sendClarifaiRequest = async (uploadedUrl) => {
     if (!uploadedUrl) {
       throw new Error(
@@ -95,7 +97,7 @@ function Webcamcomponent(props) {
         {
           data: {
             image: {
-              url: uploadedUrl,
+              url: uploadedUrl, // Pass the Cloudinary URL to Clarifai
             },
           },
         },
@@ -111,7 +113,7 @@ function Webcamcomponent(props) {
     };
 
     try {
-      // Use the Vercel serverless function as a proxy
+      console.log("Sending request to Clarifai with URL:", uploadedUrl); // Log the request URL
       const response = await fetch("/api/clarifai", requestOptions);
       if (!response.ok) {
         throw new Error(
@@ -125,7 +127,6 @@ function Webcamcomponent(props) {
     }
   };
 
-  // Handle click on labels to remove them
   const handleLabelClick = (className) => {
     props.onLabelSelect(className);
     setImageLabels((prevLabels) =>
@@ -133,28 +134,24 @@ function Webcamcomponent(props) {
     );
   };
 
-  // Delete the captured photo
   const deletePhoto = () => {
     setHasPhoto(false);
     setCapturedImage(null);
     setImageLabels([]);
   };
 
-  // Reset the camera state
   const resetCamera = () => {
     setHasPhoto(false);
     setCapturedImage(null);
     setImageLabels([]);
   };
 
-  // Reset the camera when the modal is closed
   useEffect(() => {
     if (props.visible === false) {
       resetCamera();
     }
   }, [props.visible]);
 
-  // Add an event listener for the photo button
   useEffect(() => {
     const photoButton = document.getElementById("photoButton");
     if (photoButton) {
