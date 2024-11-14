@@ -40,16 +40,20 @@ function Webcamcomponent(props) {
     setHasPhoto(true);
 
     try {
+      // Upload image to Cloudinary
       const uploadResponse = await uploadImageToCloudinary(imageSrc);
-      const uploadedUrl = uploadResponse.secure_url;
-      setCloudinaryUrl(uploadedUrl);
+      const uploadedUrl = uploadResponse?.secure_url;
 
       if (uploadedUrl) {
+        console.log("Uploaded image URL:", uploadedUrl);
+        setCloudinaryUrl(uploadedUrl);
         props.onCapture(imageSrc, uploadedUrl);
         props.onCloudinaryUrlUpdate(uploadedUrl);
+
+        // Analyze the image using Clarifai
         await analyzeImageWithClarifai(uploadedUrl);
       } else {
-        console.error("Uploaded URL is undefined");
+        console.error("Failed to retrieve the uploaded image URL.");
       }
     } catch (error) {
       console.error("Error uploading image to Cloudinary:", error);
@@ -80,6 +84,12 @@ function Webcamcomponent(props) {
 
   // Send a request to the Vercel serverless function
   const sendClarifaiRequest = async (uploadedUrl) => {
+    if (!uploadedUrl) {
+      throw new Error(
+        "Invalid image URL. Please check the image upload process."
+      );
+    }
+
     const requestData = {
       inputs: [
         {
@@ -101,7 +111,7 @@ function Webcamcomponent(props) {
     };
 
     try {
-      // Use the Vercel serverless function 
+      // Use the Vercel serverless function as a proxy
       const response = await fetch("/api/clarifai", requestOptions);
       if (!response.ok) {
         throw new Error(
@@ -110,6 +120,7 @@ function Webcamcomponent(props) {
       }
       return await response.json();
     } catch (error) {
+      console.error("Error analyzing image with Clarifai:", error);
       throw new Error(error.message);
     }
   };
