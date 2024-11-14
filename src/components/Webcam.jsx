@@ -93,11 +93,17 @@ function Webcamcomponent(props) {
     }
 
     const requestData = {
+      user_app_id: {
+        user_id: "clarifai",
+        app_id: "main",
+      },
       inputs: [
         {
+          id: "image-input",
           data: {
             image: {
-              url: uploadedUrl, // Pass the Cloudinary URL to Clarifai
+              url: uploadedUrl,
+              allow_duplicate_url: true, 
             },
           },
         },
@@ -107,20 +113,28 @@ function Webcamcomponent(props) {
     const requestOptions = {
       method: "POST",
       headers: {
+        Authorization: `Key YOUR_CLARIFAI_API_KEY`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestData),
     };
 
     try {
-      console.log("Sending request to Clarifai with URL:", uploadedUrl); // Log the request URL
-      const response = await fetch("/api/clarifai", requestOptions);
+      console.log("Sending request to Clarifai with image URL:", uploadedUrl);
+      const response = await fetch(
+        "https://api.clarifai.com/v2/models/aa7f35c01e0642fda5cf400f543e7c40/outputs",
+        requestOptions
+      );
+      const data = await response.json();
+
+      // Log the full response for debugging
+      console.log("Clarifai API Response:", data);
+
       if (!response.ok) {
-        throw new Error(
-          "Error analyzing image with Clarifai API via serverless function"
-        );
+        throw new Error(`Clarifai API Error: ${data.status.description}`);
       }
-      return await response.json();
+
+      return data;
     } catch (error) {
       console.error("Error analyzing image with Clarifai:", error);
       throw new Error(error.message);
