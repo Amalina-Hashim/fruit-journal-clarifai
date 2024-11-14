@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   const { imageUrl } = req.body;
-  const apiKey = process.env.CLARIFAI_API_KEY;
+  const pat = process.env.CLARIFAI_PAT;
 
   try {
     const clarifaiResponse = await fetch(
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       {
         method: "POST",
         headers: {
-          Authorization: `Key ${apiKey}`,
+          Authorization: `Bearer ${pat}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -35,6 +35,13 @@ export default async function handler(req, res) {
     );
 
     const data = await clarifaiResponse.json();
+
+    if (!clarifaiResponse.ok) {
+      console.error("Clarifai API Error Response:", data);
+      return res.status(400).json(data);
+    }
+
+    console.log("Clarifai API Response:", data);
     res.status(200).json(data);
   } catch (error) {
     console.error("Error communicating with Clarifai API:", error);
