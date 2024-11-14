@@ -6,11 +6,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCamera } from "@fortawesome/free-solid-svg-icons";
 import { createNote, getAllNotes } from "../utils/airtable";
 
-
 function App() {
   const [notes, setNotes] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [resetModal, setResetModal] = useState(false); 
+  const [resetModal, setResetModal] = useState(false);
   const [, setLocationName] = useState("");
   const [, setCloudinaryUrl] = useState("");
 
@@ -19,11 +18,11 @@ function App() {
     async function fetchNotes() {
       try {
         const notesData = await getAllNotes();
-        const updatedNotes = notesData.map(item => ({
+        const updatedNotes = notesData.map((item) => ({
           ...item,
           fields: {
             ...item.fields,
-            labels: item.fields.labels.split(','), 
+            labels: item.fields.labels ? item.fields.labels.split(",") : [], 
           },
         }));
         setNotes(updatedNotes);
@@ -36,9 +35,17 @@ function App() {
 
   async function addNote(newNote, cloudinaryUrl) {
     try {
-      const createdRecord = await createNote({ ...newNote, cloudUrl: cloudinaryUrl });
-      createdRecord.fields.labels = createdRecord.fields.labels.split(',');
-      setNotes((prevNotes) => [...prevNotes, { ...createdRecord, cloudUrl: cloudinaryUrl }])
+      const createdRecord = await createNote({
+        ...newNote,
+        cloudUrl: cloudinaryUrl,
+      });
+      createdRecord.fields.labels = createdRecord.fields.labels
+        ? createdRecord.fields.labels.split(",")
+        : [];
+      setNotes((prevNotes) => [
+        ...prevNotes,
+        { ...createdRecord, cloudUrl: cloudinaryUrl },
+      ]);
     } catch (error) {
       console.error("Error creating note:", error);
     }
