@@ -11,6 +11,7 @@ function Webcamcomponent(props) {
   const [capturedImage, setCapturedImage] = useState(null);
   const [cloudinaryUrl, setCloudinaryUrl] = useState("");
   const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const toggleCamera = (event) => {
     event.preventDefault();
@@ -37,27 +38,26 @@ function Webcamcomponent(props) {
     setHasPhoto(true);
 
     try {
-      // Upload image to Cloudinary
+      setLoading(true); 
       const uploadResponse = await uploadImageToCloudinary(imageSrc);
       const uploadedUrl = uploadResponse?.secure_url;
 
       if (uploadedUrl) {
-        console.log("Cloudinary uploaded image URL:", uploadedUrl); // Log the uploaded URL
+        console.log("Cloudinary uploaded image URL:", uploadedUrl);
         setCloudinaryUrl(uploadedUrl);
         props.onCapture(imageSrc, uploadedUrl);
         props.onCloudinaryUrlUpdate(uploadedUrl);
-
-        // Analyze the image using Clarifai with the Cloudinary URL
         await analyzeImageWithClarifai(uploadedUrl);
       } else {
         console.error("Uploaded URL is undefined");
       }
     } catch (error) {
       console.error("Error uploading image to Cloudinary:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Analyze the uploaded image using the Clarifai API through the serverless function
   const analyzeImageWithClarifai = async (uploadedUrl) => {
     try {
       if (!uploadedUrl) {
@@ -68,12 +68,10 @@ function Webcamcomponent(props) {
       const clarifaiResponse = await sendClarifaiRequest(uploadedUrl);
       const predictions = clarifaiResponse.outputs[0]?.data?.concepts || [];
 
-      // Filter predictions with confidence score >= 0.95
       const filteredPredictions = predictions.filter(
         (prediction) => prediction.value >= 0.95
       );
 
-      // Format the predictions for display
       const formattedLabels = filteredPredictions.map((prediction) => ({
         classNames: [prediction.name],
       }));
@@ -84,7 +82,6 @@ function Webcamcomponent(props) {
     }
   };
 
-  // Send request to the Clarifai API via serverless function
   const sendClarifaiRequest = async (uploadedUrl) => {
     if (!uploadedUrl) {
       throw new Error(
@@ -124,7 +121,6 @@ function Webcamcomponent(props) {
       throw new Error(error.message);
     }
   };
-
 
   const handleLabelClick = (className) => {
     props.onLabelSelect(className);
@@ -196,19 +192,23 @@ function Webcamcomponent(props) {
             </button>
             <div className="labels">
               <h3>Looks like you're having:</h3>
-              <ul>
-                {imageLabels.map((label, labelIndex) =>
-                  label.classNames.map((className, classNameIndex) => (
-                    <li
-                      className="list"
-                      key={`${labelIndex}-${classNameIndex}`}
-                      onClick={() => handleLabelClick(className)}
-                    >
-                      {className}
-                    </li>
-                  ))
-                )}
-              </ul>
+              {loading ? (
+                <p>Processing image...</p>
+              ) : (
+                <ul>
+                  {imageLabels.map((label, labelIndex) =>
+                    label.classNames.map((className, classNameIndex) => (
+                      <li
+                        className="list"
+                        key={`${labelIndex}-${classNameIndex}`}
+                        onClick={() => handleLabelClick(className)}
+                      >
+                        {className}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
             </div>
           </>
         )}
