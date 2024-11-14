@@ -5,6 +5,10 @@ export default async function handler(req, res) {
 
   const { imageUrl } = req.body;
   const pat = process.env.CLARIFAI_PAT;
+  const userId = "clarifai";
+  const appId = "main";
+  const modelId = "general-image-recognition";
+  const modelVersionId = "aa7f35c01e0642fda5cf400f543e7c40";
 
   if (!pat) {
     console.error("Error: Personal Access Token (PAT) is not set.");
@@ -21,68 +25,48 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Step 1: Fetch the available model versions
-    const versionResponse = await fetch(
-      "https://api.clarifai.com/v2/models/general-image-recognition/versions",
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${pat}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const versionData = await versionResponse.json();
-    const latestVersionId = versionData?.model_versions?.[0]?.id;
-
-    if (!latestVersionId) {
-      return res
-        .status(400)
-        .json({ error: "Could not retrieve the latest model version ID." });
-    }
-
-    console.log("Using model version ID:", latestVersionId);
-
-    // Step 2: Analyze the image using the retrieved model version ID
+    // Prepare the request payload
     const requestData = {
       user_app_id: {
-        user_id: "clarifai",
-        app_id: "main",
+        user_id: userId,
+        app_id: appId,
       },
       inputs: [
         {
           data: {
             image: {
               url: imageUrl,
-              allow_duplicate_url: true,
             },
           },
         },
       ],
     };
 
-    const analysisResponse = await fetch(
-      `https://api.clarifai.com/v2/models/general-image-recognition/versions/${latestVersionId}/outputs`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${pat}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestData),
-      }
-    );
+    // Define the request options
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Key ${pat}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestData),
+    };
 
-    const analysisData = await analysisResponse.json();
+    // Use the full endpoint with model version ID
+    const endpoint = `https://api.clarifai.com/v2/models/${modelId}/versions/${modelVersionId}/outputs`;
 
-    if (!analysisResponse.ok) {
-      console.error("Clarifai API Error Response:", analysisData);
-      return res.status(400).json(analysisData);
+    // Send the request to the Clarifai API
+    const clarifaiResponse = await fetch(endpoint, requestOptions);
+    const data = await clarifaiResponse.json();
+
+    if (!clarifaiResponse.ok) {
+      console.error("Clarifai API Error Response:", data);
+      return res.status(400).json(data);
     }
 
-    console.log("Clarifai API Response:", analysisData);
-    res.status(200).json(analysisData);
+    console.log("Clarifai API Response:", data);
+    res.status(200).json(data);
   } catch (error) {
     console.error("Error communicating with Clarifai API:", error);
     res
