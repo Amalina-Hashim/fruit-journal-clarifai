@@ -92,54 +92,39 @@ function Webcamcomponent(props) {
       );
     }
 
-    const requestData = {
-      user_app_id: {
-        user_id: "clarifai",
-        app_id: "main",
-      },
-      inputs: [
-        {
-          id: "image-input",
-          data: {
-            image: {
-              url: uploadedUrl,
-              allow_duplicate_url: true, 
-            },
-          },
-        },
-      ],
-    };
-
     const requestOptions = {
       method: "POST",
       headers: {
-        Authorization: `Key YOUR_CLARIFAI_API_KEY`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestData),
+      body: JSON.stringify({ imageUrl: uploadedUrl }),
     };
 
     try {
-      console.log("Sending request to Clarifai with image URL:", uploadedUrl);
-      const response = await fetch(
-        "https://api.clarifai.com/v2/models/aa7f35c01e0642fda5cf400f543e7c40/outputs",
-        requestOptions
+      console.log(
+        "Sending request to Vercel serverless function with image URL:",
+        uploadedUrl
       );
+      const response = await fetch("/api/clarifai", requestOptions);
       const data = await response.json();
 
-      // Log the full response for debugging
-      console.log("Clarifai API Response:", data);
-
       if (!response.ok) {
-        throw new Error(`Clarifai API Error: ${data.status.description}`);
+        throw new Error(
+          `Serverless function error: ${data.error || "Unknown error"}`
+        );
       }
 
+      console.log("Response from serverless function:", data);
       return data;
     } catch (error) {
-      console.error("Error analyzing image with Clarifai:", error);
+      console.error(
+        "Error analyzing image with Clarifai via serverless function:",
+        error
+      );
       throw new Error(error.message);
     }
   };
+
 
   const handleLabelClick = (className) => {
     props.onLabelSelect(className);
