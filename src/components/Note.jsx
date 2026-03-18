@@ -2,13 +2,10 @@ import React from "react";
 import { deleteNoteById } from "../utils/airtable";
 
 function Note(props) {
-
-
-  
   async function handleClick() {
     try {
-      await deleteNoteById(props.id); 
-      props.onDelete(props.id); 
+      await deleteNoteById(props.id);
+      props.onDelete(props.id);
     } catch (error) {
       console.error("Error deleting note:", error);
     }
@@ -32,10 +29,10 @@ function Note(props) {
         <img
           className="noteImage"
           src={props.image[0].url}
-          alt="Captured Image"
+          alt="captured photo"
         />
       )}
-      {props.cloudUrl && <img src={props.cloudUrl} alt="Cloudinary Image" />} 
+      {props.cloudUrl && <img src={props.cloudUrl} alt="fruit photo" />}
       <p>Location📍: {props.location}</p>
       <button onClick={handleClick}>DELETE</button>
     </div>
@@ -43,4 +40,3 @@ function Note(props) {
 }
 
 export default Note;
-

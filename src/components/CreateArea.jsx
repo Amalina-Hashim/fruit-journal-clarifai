@@ -36,7 +36,7 @@ function CreateArea(props) {
 
   const handleRemoveLabel = (removedLabel) => {
     const updatedSelectedLabels = selectedLabels.filter(
-      (label) => label !== removedLabel
+      (label) => label !== removedLabel,
     );
     setSelectedLabels(updatedSelectedLabels);
   };
@@ -45,8 +45,7 @@ function CreateArea(props) {
     setCloudinaryUrl(uploadedUrl);
   };
 
-  useEffect(() => {
-  }, [cloudinaryUrl]); 
+  useEffect(() => {}, [cloudinaryUrl]);
 
   useEffect(() => {
     if (!props.modalOpen) {
@@ -74,7 +73,7 @@ function CreateArea(props) {
       setTimestampSet(false);
       props.onReset();
     }
-  }, [props.reset]);
+  }, [props.reset, props.onReset]);
 
   async function submitNote(event) {
     event.preventDefault();
@@ -92,7 +91,7 @@ function CreateArea(props) {
       content: contentString,
       labels: labelsArray.join(","),
       image: imageData,
-      cloudUrl: cloudinaryUrl, 
+      cloudUrl: cloudinaryUrl,
       location: locationData,
     };
 
