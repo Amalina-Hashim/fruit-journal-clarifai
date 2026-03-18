@@ -29,10 +29,10 @@ function Note(props) {
         <img
           className="noteImage"
           src={props.image[0].url}
-          alt="captured photo"
+          alt="captured from webcam"
         />
       )}
-      {props.cloudUrl && <img src={props.cloudUrl} alt="fruit photo" />}
+      {props.cloudUrl && <img src={props.cloudUrl} alt="fruit entry" />}
       <p>Location📍: {props.location}</p>
       <button onClick={handleClick}>DELETE</button>
     </div>

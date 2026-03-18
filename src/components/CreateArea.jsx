@@ -66,14 +66,15 @@ function CreateArea(props) {
   }, [timestampSet]);
 
   useEffect(() => {
-    if (props.reset) {
+    const { reset, onReset } = props;
+    if (reset) {
       setNote({ title: formatDate(), content: [] });
       setCapturedImage("");
       setCloudinaryUrl("");
       setTimestampSet(false);
-      props.onReset();
+      onReset();
     }
-  }, [props.reset, props.onReset]);
+  }, [props]);
 
   async function submitNote(event) {
     event.preventDefault();
