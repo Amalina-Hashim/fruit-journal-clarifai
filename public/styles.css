@@ -45,8 +45,8 @@ header h1 {
   display: block;
   width: 100%;
   height: auto;
-  margin-bottom: 10px; 
-  flex-shrink: 0; 
+  margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .note h1 {
@@ -62,7 +62,7 @@ header h1 {
 }
 
 .note button {
-  margin-top: auto; 
+  margin-top: auto;
   color: white;
   border: none;
   width: 70px;
@@ -224,8 +224,8 @@ canvas {
 }
 
 .captured-photo {
-margin-top: 10px;
-margin-bottom: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 img {
@@ -274,6 +274,29 @@ img {
   font-size: 22px;
 }
 
+.statusMessage {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.statusLoading {
+  color: #5a2a8c;
+  background: #f3e8ff;
+}
+
+.statusNeutral {
+  color: #4a5568;
+  background: #edf2f7;
+}
+
+.statusError {
+  color: #9b1c1c;
+  background: #fde8e8;
+}
+
 .location {
   margin: 12px;
   font-size: 20px;
@@ -281,7 +304,7 @@ img {
 
 .list {
   border-radius: 30px;
-  background:linear-gradient(to top right, #cc00ff 0%, #cc3399 100%);
+  background: linear-gradient(to top right, #cc00ff 0%, #cc3399 100%);
   padding: 8px;
   margin: 4px 0;
   text-align: center;
@@ -291,7 +314,7 @@ img {
 
 .label-item {
   border-radius: 8px;
-  background:linear-gradient(to top, #9be15d 0%, #00e3ae 100%); 
+  background: linear-gradient(to top, #9be15d 0%, #00e3ae 100%);
   padding: 8px;
   margin: 10px 4px;
   text-align: center;
@@ -301,14 +324,13 @@ img {
   font-size: 20px;
   height: 40px;
   width: auto;
-
 }
 
 .label-list h2 {
-color:#cc3399;
-font-weight: bolder;
-margin-bottom: 10px;
-font-size: 30px;
+  color: #cc3399;
+  font-weight: bolder;
+  margin-bottom: 10px;
+  font-size: 30px;
 }
 
 .loading-airtable {
@@ -333,8 +355,6 @@ font-size: 30px;
 
 .camera-icon {
   margin-top: 20px;
-   
-  
 }
 
 .back-link {
@@ -346,7 +366,7 @@ font-size: 30px;
   font-size: 20px;
   font-weight: bold;
   text-decoration: none;
-  color:#cc3399;
+  color: #cc3399;
 }
 
 .nav {
@@ -378,7 +398,3 @@ font-size: 30px;
   cursor: pointer;
   margin-left: 10px;
 }
-
-
-
-

@@ -9,9 +9,27 @@ function Webcamcomponent(props) {
   const [hasPhoto, setHasPhoto] = useState(false);
   const [imageLabels, setImageLabels] = useState([]);
   const [capturedImage, setCapturedImage] = useState(null);
-  const [cloudinaryUrl, setCloudinaryUrl] = useState("");
+  const [, setCloudinaryUrl] = useState("");
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
+
+  const getFriendlyClarifaiError = (data, statusCode) => {
+    const clarifaiCode = data?.details?.status?.code;
+    const clarifaiDetails = data?.details?.status?.details;
+
+    if (clarifaiCode === 11006 || statusCode === 402) {
+      return "Detection is unavailable right now. Clarifai credits are exhausted.";
+    }
+
+    if (statusCode >= 500) {
+      return "Server issue while analyzing your image. Please try again shortly.";
+    }
+
+    return (
+      clarifaiDetails || data?.error || "Unable to analyze image right now."
+    );
+  };
 
   const toggleCamera = (event) => {
     event.preventDefault();
@@ -36,9 +54,10 @@ function Webcamcomponent(props) {
     const imageSrc = webcamRef.current.getScreenshot();
     setCapturedImage(imageSrc);
     setHasPhoto(true);
+    setAnalysisError("");
 
     try {
-      setLoading(true); 
+      setLoading(true);
       const uploadResponse = await uploadImageToCloudinary(imageSrc);
       const uploadedUrl = uploadResponse?.secure_url;
 
@@ -69,23 +88,29 @@ function Webcamcomponent(props) {
       const predictions = clarifaiResponse.outputs[0]?.data?.concepts || [];
 
       const filteredPredictions = predictions.filter(
-        (prediction) => prediction.value >= 0.95
+        (prediction) => prediction.value >= 0.85,
       );
 
-      const formattedLabels = filteredPredictions.map((prediction) => ({
+      const fallbackPredictions =
+        filteredPredictions.length > 0
+          ? filteredPredictions
+          : predictions.slice(0, 5);
+
+      const formattedLabels = fallbackPredictions.map((prediction) => ({
         classNames: [prediction.name],
       }));
 
       setImageLabels(formattedLabels);
     } catch (error) {
       console.error("Error analyzing image with Clarifai:", error);
+      setAnalysisError(error.message || "Failed to analyze image.");
     }
   };
 
   const sendClarifaiRequest = async (uploadedUrl) => {
     if (!uploadedUrl) {
       throw new Error(
-        "Invalid image URL. Please check the image upload process."
+        "Invalid image URL. Please check the image upload process.",
       );
     }
 
@@ -100,15 +125,24 @@ function Webcamcomponent(props) {
     try {
       console.log(
         "Sending request to Vercel serverless function with image URL:",
-        uploadedUrl
+        uploadedUrl,
       );
       const response = await fetch("/api/clarifai", requestOptions);
-      const data = await response.json();
+      const contentType = response.headers.get("content-type") || "";
+      const rawBody = await response.text();
+      const data = contentType.includes("application/json")
+        ? JSON.parse(rawBody)
+        : { error: rawBody || "Unexpected non-JSON response" };
 
       if (!response.ok) {
+        const friendlyMessage = getFriendlyClarifaiError(data, response.status);
         throw new Error(
-          `Serverless function error: ${data.error || "Unknown error"}`
+          `Serverless function error (${response.status}): ${friendlyMessage}`,
         );
+      }
+
+      if (!data?.outputs?.length) {
+        throw new Error("Clarifai returned no predictions for this image.");
       }
 
       console.log("Response from serverless function:", data);
@@ -116,7 +150,7 @@ function Webcamcomponent(props) {
     } catch (error) {
       console.error(
         "Error analyzing image with Clarifai via serverless function:",
-        error
+        error,
       );
       throw new Error(error.message);
     }
@@ -125,7 +159,7 @@ function Webcamcomponent(props) {
   const handleLabelClick = (className) => {
     props.onLabelSelect(className);
     setImageLabels((prevLabels) =>
-      prevLabels.filter((label) => !label.classNames.includes(className))
+      prevLabels.filter((label) => !label.classNames.includes(className)),
     );
   };
 
@@ -133,12 +167,14 @@ function Webcamcomponent(props) {
     setHasPhoto(false);
     setCapturedImage(null);
     setImageLabels([]);
+    setAnalysisError("");
   };
 
   const resetCamera = () => {
     setHasPhoto(false);
     setCapturedImage(null);
     setImageLabels([]);
+    setAnalysisError("");
   };
 
   useEffect(() => {
@@ -146,19 +182,6 @@ function Webcamcomponent(props) {
       resetCamera();
     }
   }, [props.visible]);
-
-  useEffect(() => {
-    const photoButton = document.getElementById("photoButton");
-    if (photoButton) {
-      photoButton.addEventListener("click", takePhoto);
-    }
-
-    return () => {
-      if (photoButton) {
-        photoButton.removeEventListener("click", takePhoto);
-      }
-    };
-  }, [takePhoto]);
 
   return (
     <div className="webcamContainer">
@@ -193,21 +216,37 @@ function Webcamcomponent(props) {
             <div className="labels">
               <h3>Looks like you're having:</h3>
               {loading ? (
-                <p>Processing image...</p>
+                <p className="statusMessage statusLoading">
+                  Analyzing your photo...
+                </p>
               ) : (
-                <ul>
-                  {imageLabels.map((label, labelIndex) =>
-                    label.classNames.map((className, classNameIndex) => (
-                      <li
-                        className="list"
-                        key={`${labelIndex}-${classNameIndex}`}
-                        onClick={() => handleLabelClick(className)}
-                      >
-                        {className}
-                      </li>
-                    ))
+                <>
+                  {imageLabels.length > 0 ? (
+                    <ul>
+                      {imageLabels.map((label, labelIndex) =>
+                        label.classNames.map((className, classNameIndex) => (
+                          <li
+                            className="list"
+                            key={`${labelIndex}-${classNameIndex}`}
+                            onClick={() => handleLabelClick(className)}
+                          >
+                            {className}
+                          </li>
+                        )),
+                      )}
+                    </ul>
+                  ) : (
+                    !analysisError && (
+                      <p className="statusMessage statusNeutral">
+                        No strong matches yet. Try a brighter image or a closer
+                        shot.
+                      </p>
+                    )
                   )}
-                </ul>
+                </>
+              )}
+              {!loading && analysisError && (
+                <p className="statusMessage statusError">{analysisError}</p>
               )}
             </div>
           </>

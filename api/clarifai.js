@@ -3,7 +3,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { imageUrl } = req.body;
+  const payload =
+    typeof req.body === "string"
+      ? JSON.parse(req.body || "{}")
+      : req.body || {};
+  const { imageUrl } = payload;
   const pat = process.env.CLARIFAI_PAT;
   const userId = "clarifai";
   const appId = "main";
@@ -62,7 +66,11 @@ export default async function handler(req, res) {
 
     if (!clarifaiResponse.ok) {
       console.error("Clarifai API Error Response:", data);
-      return res.status(400).json(data);
+      return res.status(clarifaiResponse.status || 502).json({
+        error: "Clarifai request failed",
+        clarifaiStatus: clarifaiResponse.status,
+        details: data,
+      });
     }
 
     console.log("Clarifai API Response:", data);
